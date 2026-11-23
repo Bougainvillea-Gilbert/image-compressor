@@ -43,26 +43,46 @@ All compression runs locally in your browser using **WebAssembly and Web Workers
 
 ```text
 dist/图片压缩器.html
+```
 
-方式二：安装带图标的桌面快捷方式（Windows）
-dist/ 目录中已打包完整的启动图标与快捷方式脚本：
-进入 dist/ 目录，双击 安装桌面快捷方式.bat，即可在桌面生成带有专属启动图标的 “图片压缩器” 快捷方式（对应图标文件为 dist/图片压缩器图标.ico）。
-也可以直接双击 启动图片压缩器.bat 快速启动（.bat 文件本身显示系统默认图标，桌面快捷方式会显示自定义应用图标）。
-如需分享给他人，仅发送 dist/图片压缩器.html 即可使用全部压缩功能；若对方也需要桌面图标，可将整个 dist/ 目录打包发送。
-效果验证截图 / Verification Screenshot
-[https://www.google.com/search?q=docs/screenshots/%E7%95%8C%E9%9D%A2-%E7%9B%AE%E6%A0%87400KB%E9%AA%8C%E8%AF%81.png]
-目标大小实现原理 / How Target Size Works
-JPG：在 1–95 质量区间内二分搜索，并以真实编码字节数及解码后的像素宽高做最终校验。
-PNG：优先尝试无损压缩；若当前颜色档位超标，先提高压缩级别，再逐步尝试降色量化并重新解码校验。
-WebP 极速模式（可选）：调用浏览器原生 OffscreenCanvas 进行二分质量编码；若当前环境不支持则自动回退到原格式路径。
-严格兜底：若无法在保持格式与尺寸的前提下压到目标体积以下，任务会进入未达标区域，绝不将超标文件伪装为成功。
-本地开发与构建 / Local Development
-需要 Node.js 22+（已在 Node 24 上验证通过）：
+### 方式二：安装带图标的桌面快捷方式（Windows）
+`dist/` 目录中已打包完整的启动图标与快捷方式脚本：
+
+1. 进入 `dist/` 目录，双击 **`安装桌面快捷方式.bat`**，即可在桌面生成带有专属启动图标的 **“图片压缩器”** 快捷方式（对应图标文件为 `dist/图片压缩器图标.ico`）。
+2. 也可以直接双击 **`启动图片压缩器.bat`** 快速启动（`.bat` 文件本身显示系统默认图标，桌面快捷方式会显示自定义应用图标）。
+3. 如需分享给他人，仅发送 `dist/图片压缩器.html` 即可使用全部压缩功能；若对方也需要桌面图标，可将整个 `dist/` 目录打包发送。
+
+---
+
+## 效果验证截图 / Verification Screenshot
+
+[docs/screenshots/界面-目标400KB验证.png]
+
+---
+
+## 目标大小实现原理 / How Target Size Works
+
+- **JPG**：在 `1–95` 质量区间内二分搜索，并以真实编码字节数及解码后的像素宽高做最终校验。
+- **PNG**：优先尝试无损压缩；若当前颜色档位超标，先提高压缩级别，再逐步尝试降色量化并重新解码校验。
+- **WebP 极速模式（可选）**：调用浏览器原生 `OffscreenCanvas` 进行二分质量编码；若当前环境不支持则自动回退到原格式路径。
+- **严格兜底**：若无法在保持格式与尺寸的前提下压到目标体积以下，任务会进入未达标区域，绝不将超标文件伪装为成功。
+
+---
+
+## 本地开发与构建 / Local Development
+
+需要 **Node.js 22+**（已在 Node 24 上验证通过）：
+
+```bash
 npm install
 npm run build
+```
 
-npm run build（build.mjs）会自动完成：打包主界面与 Worker、读取 @jsquash/jpeg / @jsquash/png / @jsquash/oxipng 的 WASM 并内联，最终输出 dist/图片压缩器.html 并同步更新 docs/index.html。
-目录结构 / Project Structure
+`npm run build`（`build.mjs`）会自动完成：打包主界面与 Worker、读取 `@jsquash/jpeg` / `@jsquash/png` / `@jsquash/oxipng` 的 WASM 并内联，最终输出 `dist/图片压缩器.html` 并同步更新 `docs/index.html`。
+
+### 目录结构 / Project Structure
+
+```text
 index.html                 页面结构、白黄工业风 CSS 与入场动画
 src/app.js                 页面控制、事件驱动队列、停止/重跑与 ZIP 导出
 src/card.js                任务卡片渲染、对比预览与档位同步切换
@@ -78,37 +98,63 @@ dist/                      预构建单文件 HTML、图标与 Windows 快捷方
 docs/                      设计规范、参考图、界面截图与 GitHub Pages 入口
 test/                      Playwright 自动化回归测试
 build.mjs                  单文件构建脚本
+```
 
-自动化测试 / Testing
+---
+
+## 自动化测试 / Testing
+
 测试基于 Python + Playwright + Pillow：
+
+```bash
 pip install -r test/requirements.txt
 python -m playwright install chromium
 python test/spec_check.py
+```
 
 其他专项回归脚本：
+
+```bash
 python test/target_check.py
 python test/target_timing.py
 python test/queue_zip_check.py
 python test/stop_rerun_check.py
 python test/fast_webp_check.py
 python test/offline.py
+```
 
-GitHub Pages 在线部署 / GitHub Pages
-仓库已包含同步生成的 docs/index.html（详见 GITHUB_UPLOAD.md）：
-进入仓库 Settings → Pages；
-Source 选择 Deploy from a branch；
-Branch 选择 main，目录选择 /docs 并保存，即可在线访问。
-隐私说明 / Privacy
-所有图片、压缩结果与缓存仅保存在浏览器内存中。
-页面不发起任何外部网络请求；图标、背景、WASM 与 Worker 均已本地内联。
-关闭页面后，缓存与任务列表自动清空，原始文件不会被修改。
-设计资料 / Design References
-设计规范 / UI Spec
-02 号视觉参考图 / Reference 02
-白黄工业风界面截图 / Main UI Screenshot
-400 KB 目标验证截图 / 400 KB Target Verification
-许可证与第三方声明 / License & Notices
-本仓库目前尚未为整体项目指定开源许可证。如需公开发布，请根据实际需求补充 LICENSE 文件（例如 MIT / Apache-2.0），并确认代码与设计素材的授权范围。
-应用启动图标、设计参考图和界面设计由项目所有者提供，未附加再分发许可。
+---
 
-第三方开源依赖许可详见 THIRD_PARTY_NOTICES.md。
+## GitHub Pages 在线部署 / GitHub Pages
+
+仓库已包含同步生成的 `docs/index.html`（详见 [GITHUB_UPLOAD.md](GITHUB_UPLOAD.md)）：
+
+1. 进入仓库 **Settings → Pages**；
+2. **Source** 选择 `Deploy from a branch`；
+3. **Branch** 选择 `main`，目录选择 `/docs` 并保存，即可在线访问。
+
+---
+
+## 隐私说明 / Privacy
+
+- 所有图片、压缩结果与缓存仅保存在浏览器内存中。
+- 页面不发起任何外部网络请求；图标、背景、WASM 与 Worker 均已本地内联。
+- 关闭页面后，缓存与任务列表自动清空，原始文件不会被修改。
+
+---
+
+## 设计资料 / Design References
+
+- [设计规范 / UI Spec](docs/compressor-ui-spec.md)
+- [02 号视觉参考图 / Reference 02](docs/reference-02.png)
+- [白黄工业风界面截图 / Main UI Screenshot](docs/screenshots/界面-白黄工业风.png)
+- [400 KB 目标验证截图 / 400 KB Target Verification](docs/screenshots/界面-目标400KB验证.png)
+
+---
+
+## 许可证与第三方声明 / License & Notices
+
+本仓库目前**尚未为整体项目指定开源许可证**。如需公开发布，请根据实际需求补充 `LICENSE` 文件（例如 MIT / Apache-2.0），并确认代码与设计素材的授权范围。
+
+- 应用启动图标、设计参考图和界面设计由项目所有者提供，未附加再分发许可。
+- 第三方开源依赖许可详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
