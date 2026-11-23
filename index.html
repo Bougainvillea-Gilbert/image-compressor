@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图像压缩终端 · IMAGE COMPRESSOR</title>
+<link rel="icon" href="__APP_ICON_DATA__">
+<style>
+  :root {
+    --bg: #f5f6f7; --panel: #fff; --panel-gray: #eef0f2;
+    --ink: #151719; --muted: #666c73; --line: #d2d6da;
+    --yellow: #f5e500; --yellow-hover: #e8d600;
+    --green: #267a42; --amber: #b66a10; --red: #b83a38;
+    --mono: Consolas, "Cascadia Mono", "SFMono-Regular", monospace;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { min-width: 320px; background: var(--bg); }
+  body { margin: 0; color: var(--ink); background: var(--bg); font: 14px/1.5 "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif; }
+  button, input, select { font: inherit; }
+  button { cursor: pointer; }
+  button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid #9b8c00; outline-offset: 2px; }
+  .console { max-width: 1440px; margin: 0 auto; padding: 24px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; min-height: 70px; border-bottom: 1px solid var(--line); padding-bottom: 18px; position: relative; }
+  .topbar::after { content: ""; position: absolute; left: 0; bottom: -5px; width: 110px; height: 3px; background: var(--yellow); }
+  .brand { display: flex; align-items: center; gap: 13px; }
+  .brand-mark { width: 46px; height: 46px; object-fit: cover; border-radius: 11px; }
+  .brand-title { margin: 0; font-size: 29px; line-height: 1.15; font-weight: 800; letter-spacing: -.03em; }
+  .brand-en { margin-top: 5px; color: var(--muted); font: 11px var(--mono); letter-spacing: .12em; }
+  .top-status { text-align: right; font: 12px var(--mono); color: var(--muted); white-space: nowrap; }
+  .top-status strong { display: block; color: var(--green); font-weight: 600; }
+  .top-status strong.initializing { color: var(--amber); }
+  .top-status strong.failed { color: var(--red); }
+  .top-ticks { height: 9px; margin-top: 8px; background: repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 9px); opacity: .75; }
+  .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; margin-top: 20px; align-items: start; }
+  .control-panel { background: var(--panel-gray); border: 1px solid var(--line); padding: 22px 20px 20px; position: relative; }
+  .control-panel::before { content: ""; position: absolute; left: 20px; top: 27px; width: 7px; height: 24px; background: var(--yellow); transform: skew(-22deg); }
+  .module-label { color: var(--muted); font: 11px var(--mono); letter-spacing: .1em; }
+  .module-title { margin: 5px 0 22px 18px; font-size: 22px; font-weight: 750; }
+  .field-label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 7px; }
+  .target-input-row { display: flex; align-items: stretch; gap: 8px; }
+  #targetValue { min-width: 0; width: 100%; height: 76px; border: 1px solid var(--ink); background: var(--panel); color: var(--ink); padding: 3px 10px; font: 600 54px/1 var(--mono); letter-spacing: -.08em; font-variant-numeric: tabular-nums; }
+  #targetUnit { width: 70px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 18px var(--mono); padding: 0 6px; }
+  #targetValue:disabled, #targetUnit:disabled { color: #a3a8ad; background: #e5e7e9; border-color: var(--line); }
+  .target-toggle { display: flex; align-items: center; gap: 7px; margin-top: 13px; color: var(--muted); font-size: 12px; }
+  .target-toggle.fast-toggle { margin-top: 8px; color: var(--amber); }
+  .target-toggle.fast-toggle span { font-size: 10px; color: var(--muted); }
+  .target-toggle input:disabled { opacity: .35; }
+  .target-toggle input { accent-color: var(--ink); width: 15px; height: 15px; }
+  .control-note { color: var(--muted); font-size: 12px; line-height: 1.8; margin: 15px 0 20px; }
+  .start-button, .yellow-button {
+    display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 50px;
+    border: 1px solid var(--ink); padding: 0 16px; background: var(--yellow); color: var(--ink);
+    font-weight: 800; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+    transition: background .15s, transform .15s;
+  }
+  .start-button:hover:not(:disabled), .yellow-button:hover:not(:disabled) { background: var(--yellow-hover); }
+  .start-button:active:not(:disabled), .yellow-button:active:not(:disabled) { transform: scale(.98); }
+  .start-button:disabled, .yellow-button:disabled { opacity: .4; cursor: not-allowed; }
+  .start-button .arrow, .yellow-button .arrow { font: 22px var(--mono); transition: transform .15s; }
+  .start-button:hover:not(:disabled) .arrow, .yellow-button:hover:not(:disabled) .arrow { transform: translateX(3px); }
+  .control-foot { margin-top: 19px; padding-top: 13px; border-top: 1px solid var(--line); color: var(--muted); font: 10px/1.9 var(--mono); }
+  .workspace { min-width: 0; }
+  .workspace-head { display: flex; align-items: end; justify-content: space-between; gap: 14px; margin-bottom: 13px; }
+  .workspace-title { margin: 4px 0 0; font-size: 22px; font-weight: 750; }
+  .workspace-actions { display: flex; align-items: center; gap: 9px; }
+  .add-button { border: 1px solid var(--ink); background: var(--panel); min-height: 38px; padding: 0 13px; font-weight: 700; }
+  .add-button:hover { background: var(--yellow); }
+  #status { min-height: 19px; color: var(--muted); font: 12px var(--mono); margin-bottom: 10px; }
+  #dropzone { border: 1px dashed #aeb5bb; background: var(--panel); min-height: 310px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; cursor: pointer; transition: border-color .15s, background .15s, min-height .2s; }
+  #dropzone.has-files { min-height: 112px; padding: 14px; }
+  #dropzone.drag { border: 2px solid var(--yellow); background: #fffde1; }
+  .drop-icon { width: 49px; height: 49px; margin-bottom: 11px; }
+  #dropzone.has-files .drop-icon { width: 27px; height: 27px; margin-bottom: 3px; }
+  .drop-title { font-size: 17px; font-weight: 700; }
+  #dropzone.has-files .drop-title { font-size: 13px; }
+  .drop-hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+  #dropzone.has-files .drop-hint { margin-top: 2px; font-size: 11px; }
+  #dropzone kbd { border: 1px solid var(--line); background: var(--panel-gray); padding: 1px 5px; font: 11px var(--mono); }
+  #fileInput { display: none; }
+  .batch-panel { background: var(--panel); border: 1px solid var(--line); padding: 13px 15px; margin-top: 13px; }
+  .batch-summary { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .batch-summary strong { font-size: 12px; }
+  #batchStats { color: var(--muted); font: 11px var(--mono); }
+  .global-progress { height: 7px; background: #e5e7e9; margin-top: 10px; overflow: hidden; }
+  #batchProgressBar { height: 100%; width: 0; background: var(--yellow); transition: width .18s; }
+  #batchProgressBar.indeterminate, .file-progress-fill.indeterminate {
+    background: repeating-linear-gradient(135deg, var(--yellow) 0 8px, #f8ec62 8px 16px);
+    background-size: 32px 100%; animation: stripeMove 1.2s linear infinite;
+  }
+  @keyframes stripeMove { to { background-position: 32px 0; } }
+  #batchCurrent { color: var(--muted); font: 11px var(--mono); margin-top: 7px; word-break: break-all; }
+  #list { margin-top: 13px; display: grid; gap: 8px; max-height: 560px; overflow-y: auto; padding-right: 2px; }
+  .card { position: relative; background: var(--panel); border: 1px solid var(--line); padding: 11px 13px; animation: rowIn .12s ease both; }
+  .card[data-state="processing"] { border-left: 3px solid var(--yellow); }
+  .card[data-state="success"] { border-left: 3px solid var(--green); }
+  .card[data-state="failed"] { border-left: 3px solid var(--red); }
+  .card[data-state="stopped"] { border-left: 3px solid var(--amber); }
+  .card[data-state="stopped"] .state { color: var(--amber); }
+  .task-main { display: grid; grid-template-columns: 42px minmax(120px, 1.6fr) minmax(74px, .7fr) minmax(74px, .7fr) 78px 62px; align-items: center; gap: 10px; cursor: pointer; }
+  .task-thumb { width: 42px; height: 42px; object-fit: cover; border: 1px solid var(--line); background: var(--panel-gray); }
+  .task-thumb.placeholder { display: flex; align-items: center; justify-content: center; color: var(--muted); font: 10px var(--mono); }
+  .file-ident { min-width: 0; }
+  .fname { display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-sub { color: var(--muted); font: 10px var(--mono); margin-top: 3px; }
+  .task-number { font: 11px var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .task-number small { display: block; color: var(--muted); font: 10px "Microsoft YaHei", sans-serif; margin-bottom: 2px; }
+  .output-number { color: var(--green); font-weight: 700; }
+  .output-number.pending { color: var(--muted); font-weight: 400; }
+  .file-status { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .file-status .state { font-size: 11px; font-weight: 700; color: var(--muted); }
+  .file-status .step { display: none; }
+  .card[data-state="processing"] .state { color: var(--amber); }
+  .card[data-state="success"] .state { color: var(--green); }
+  .card[data-state="failed"] .state { color: var(--red); }
+  .row-download { color: var(--ink); font-size: 11px; font-weight: 700; text-align: center; text-decoration: none; border-bottom: 1px solid var(--ink); padding-bottom: 2px; }
+  .row-download:hover { background: var(--yellow); }
+  .row-download.disabled { color: #a3a8ad; border-color: #a3a8ad; pointer-events: none; }
+  .file-progress { height: 3px; background: #e7e9eb; margin-top: 9px; overflow: hidden; }
+  .file-progress-fill { height: 100%; width: 0; background: var(--yellow); transition: width .18s; }
+  .card[data-state="success"] .file-progress-fill { background: var(--green); }
+  .card[data-state="failed"] .file-progress-fill { background: var(--red); }
+  .card-body { display: none; }
+  .card[data-state="queued"] .card-body, .card[data-state="processing"] .card-body { display: block; }
+  .card.expanded .card-body { display: block; }
+  .loading, .error { padding: 12px 3px 2px; color: var(--muted); font-size: 11px; }
+  .error { color: var(--red); }
+  .target-ok { margin-top: 12px; padding: 8px 10px; background: #edf7ef; color: var(--green); font-size: 11px; border-left: 3px solid var(--green); }
+  .compare { display: flex; gap: 14px; margin-top: 14px; align-items: flex-start; flex-wrap: wrap; }
+  .compare figure { margin: 0; width: 150px; flex: 0 0 150px; }
+  .compare figure img { width: 100%; max-height: 145px; object-fit: contain; border: 1px solid var(--line); background: repeating-conic-gradient(#eef0f2 0% 25%, #fff 0% 50%) 50% / 14px 14px; }
+  .compare figcaption { color: var(--muted); font: 10px var(--mono); text-align: center; margin-top: 4px; }
+  .table-wrap { flex: 1; min-width: 280px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font: 11px var(--mono); }
+  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; }
+  td a { color: var(--ink); font-weight: 700; }
+  .rec { display: inline-block; background: var(--yellow); padding: 1px 4px; margin-right: 4px; font-size: 9px; font-weight: 800; }
+  .rec-row { background: #fffde1; }
+  tbody tr { cursor: pointer; }
+  tbody tr.selected { outline: 2px solid var(--yellow); outline-offset: -2px; }
+  .good { color: var(--green); } .bad { color: var(--red); } .muted { color: var(--muted); }
+  .hint { color: var(--muted); font-size: 11px; margin: 9px 0 0; }
+  .failures { border: 1px solid #dfc4c2; background: #fff8f7; padding: 13px 15px; margin-top: 13px; }
+  .failures-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .failures-head strong { color: var(--red); font-size: 12px; }
+  .failures-head button, .failure-row button { border: 1px solid #c98c88; background: #fff; color: var(--red); padding: 5px 8px; font-size: 11px; }
+  .failure-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-top: 9px; margin-top: 9px; border-top: 1px solid #ead5d2; }
+  .failure-info { min-width: 0; }
+  .failure-info strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .failure-info span { display: block; color: var(--red); font-size: 11px; margin-top: 3px; word-break: break-word; }
+  .failure-row button { flex: 0 0 auto; }
+  .bottom-actions { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(245,246,247,.97); border-top: 1px solid var(--line); padding: 15px 0 0; margin-top: 18px; }
+  .output-summary { margin-right: auto; color: var(--muted); font: 11px var(--mono); }
+  .bottom-actions button { min-height: 42px; padding: 0 13px; border: 1px solid var(--ink); background: var(--panel); color: var(--ink); font-weight: 700; }
+  .bottom-actions button:hover:not(:disabled) { background: var(--yellow); }
+  .bottom-actions button.primary { background: var(--yellow); }
+  .bottom-actions button.primary:hover:not(:disabled) { background: var(--yellow-hover); }
+  .bottom-actions button.danger { border-color: var(--red); color: var(--red); }
+  .bottom-actions button.danger:hover:not(:disabled) { background: #fff1f0; }
+  .bottom-actions button:disabled { opacity: .4; cursor: not-allowed; }
+  footer { color: var(--muted); font: 10px var(--mono); padding-top: 17px; text-align: right; }
+  @keyframes rowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes panelIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes workspaceIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .control-panel { animation: panelIn .42s .62s both; }
+  .workspace { animation: workspaceIn .42s .68s both; }
+  .bottom-actions { animation: workspaceIn .35s .88s both; }
+  .target-input-row, .target-toggle, .control-note, .start-button { animation: workspaceIn .28s .88s both; }
+  #dropzone { animation: workspaceIn .3s .94s both; }
+  #list .card:nth-child(n+20) { animation: none; }
+  /* 首次启动：1.15 秒，纯 CSS/SVG，可点击跳过 */
+  #boot-screen { position: fixed; inset: 0; z-index: 100; background: var(--bg); display: grid; place-items: center; animation: bootOut 1.15s forwards; }
+  #boot-screen.skipped { opacity: 0; visibility: hidden; pointer-events: none; }
+  .boot-corners { position: absolute; inset: 23% 29%; }
+  .boot-corner { position: absolute; width: 42px; height: 42px; border-color: var(--ink); border-style: solid; animation: cornerIn .18s ease-out both; }
+  .boot-corner:nth-child(1) { left: 0; top: 0; border-width: 2px 0 0 2px; --tx: 22px; --ty: 22px; }
+  .boot-corner:nth-child(2) { right: 0; top: 0; border-width: 2px 2px 0 0; --tx: -22px; --ty: 22px; }
+  .boot-corner:nth-child(3) { left: 0; bottom: 0; border-width: 0 0 2px 2px; --tx: 22px; --ty: -22px; }
+  .boot-corner:nth-child(4) { right: 0; bottom: 0; border-width: 0 2px 2px 0; --tx: -22px; --ty: -22px; }
+  .boot-mark { width: 78px; height: 78px; position: relative; animation: markTravel 1.15s both; }
+  .boot-mark .rect { position: absolute; border: 2px solid var(--ink); width: 42px; height: 42px; left: 18px; top: 18px; animation: rectJoin .22s .18s both; }
+  .boot-mark .rect.two { width: 27px; height: 27px; left: 25px; top: 25px; animation-delay: .25s; }
+  .boot-mark .lock { position: absolute; width: 12px; height: 12px; background: var(--yellow); left: 33px; top: 33px; animation: lockIn .16s .4s both; }
+  .boot-word { position: absolute; top: calc(50% + 64px); font: 11px var(--mono); letter-spacing: .18em; animation: wordIn .2s .4s both; }
+  .boot-sweep { position: absolute; top: calc(50% + 91px); width: 0; height: 3px; background: var(--yellow); animation: sweep .22s .4s both; }
+  #skipBoot { position: absolute; right: 24px; bottom: 22px; border: 0; background: transparent; color: var(--muted); font-size: 12px; text-decoration: underline; }
+  @keyframes cornerIn { from { opacity: 0; transform: translate(var(--tx), var(--ty)); } to { opacity: 1; transform: translate(0, 0); } }
+  @keyframes rectJoin { from { opacity: 0; transform: scale(1.65); } to { opacity: 1; transform: scale(1); } }
+  @keyframes lockIn { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+  @keyframes markTravel { 0%, 34% { transform: translate(0, 0) scale(1); } 54%, 100% { transform: translate(-39vw, -36vh) scale(.48); opacity: .15; } }
+  @keyframes wordIn { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+  @keyframes sweep { from { width: 0; } to { width: 150px; } }
+  @keyframes bootOut { 0%, 76% { opacity: 1; visibility: visible; } 100% { opacity: 0; visibility: hidden; pointer-events: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0ms !important; transition-duration: .001ms !important; }
+    #boot-screen { display: none; }
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .control-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; align-items: center; }
+    .control-panel .module-title, .control-panel .module-label { grid-column: 1 / -1; }
+    .control-panel .module-title { margin-bottom: 5px; }
+    .control-note { margin: 0; }
+    .control-foot { display: none; }
+    .start-button { grid-column: 1 / -1; }
+    #list { max-height: none; }
+  }
+  @media (max-width: 620px) {
+    .console { padding: 16px 13px; }
+    .brand-title { font-size: 22px; }
+    .brand-en { font-size: 9px; }
+    .top-status { font-size: 10px; }
+    .control-panel { display: block; }
+    .control-panel .module-title { margin-bottom: 18px; }
+    .control-note { margin: 13px 0 16px; }
+    .workspace-head { align-items: start; flex-direction: column; }
+    .task-main { grid-template-columns: 36px minmax(100px, 1fr) 62px 62px; gap: 7px; }
+    .task-thumb { width: 36px; height: 36px; }
+    .task-main .original-number, .task-main .output-number { display: none; }
+    .task-main .file-status { grid-column: 3; }
+    .task-main .row-download { grid-column: 4; grid-row: 1; }
+    .bottom-actions { gap: 7px; }
+    .output-summary { flex-basis: 100%; }
+    .bottom-actions button { flex: 1; padding: 0 7px; font-size: 11px; }
+    .compare figure { width: 125px; flex-basis: 125px; }
+  }
+</style>
+</head>
+<body>
+<div id="boot-screen" aria-label="启动动画">
+  <button id="skipBoot" type="button">跳过动画</button>
+  <div class="boot-corners"><i class="boot-corner"></i><i class="boot-corner"></i><i class="boot-corner"></i><i class="boot-corner"></i></div>
+  <div class="boot-mark"><i class="rect"></i><i class="rect two"></i><i class="lock"></i></div>
+  <div class="boot-word">IMAGE COMPRESSOR</div><div class="boot-sweep"></div>
+</div>
+<div class="console">
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-mark" src="__APP_ICON_DATA__" alt="">
+      <div><h1 class="brand-title">图像压缩终端</h1><div class="brand-en">IMAGE COMPRESSOR / LOCAL IMAGE OPTIMIZATION</div></div>
+    </div>
+    <div class="top-status"><strong id="engineStatus" class="initializing">初始化中…</strong><span>本地处理 · 无上传</span><div class="top-ticks"></div></div>
+  </header>
+  <div class="layout">
+    <aside class="control-panel">
+      <div class="module-label">01 / PARAMETERS</div><h2 class="module-title">压缩参数</h2>
+      <label class="field-label" for="targetValue">目标文件大小</label>
+      <div class="target-input-row"><input id="targetValue" type="number" min="1" step="1" value="500" aria-label="目标大小数值"><select id="targetUnit" aria-label="目标大小单位"><option value="1024" selected>KB</option><option value="1048576">MB</option><option value="1">B</option></select></div>
+      <label class="target-toggle"><input id="targetEnabled" type="checkbox" checked> 启用目标大小限制</label>
+      <label class="target-toggle fast-toggle"><input id="fastMode" type="checkbox"> 极速模式：有损转 WebP <span>（更快，格式会变）</span></label>
+      <p class="control-note">每张输出文件严格小于目标体积<br>点击“开始压缩”时应用当前目标 · 默认保持原始宽高 · 支持 JPG / PNG / SVG</p>
+      <button id="startBtn" class="start-button" disabled><span>开始压缩</span><span class="arrow">→</span></button>
+      <div class="control-foot">INPUT → COMPRESS → VERIFY<br>BYTE SIZE CHECK / STRICTLY LESS THAN TARGET</div>
+    </aside>
+    <section class="workspace">
+      <div class="workspace-head"><div><div class="module-label">02 / BATCH WORKSPACE</div><h2 class="workspace-title">批量图像处理</h2></div><div class="workspace-actions"><button id="addBtn" class="add-button" type="button">＋ 添加图片</button></div></div>
+      <div id="status" role="status">正在加载压缩引擎…</div>
+      <div id="dropzone">
+        <svg class="drop-icon" viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M10 10h44v44H10z" stroke="#151719" stroke-width="2"/><path d="M32 16v27m-9-9 9 9 9-9M19 49h26" stroke="#151719" stroke-width="2"/><path d="M10 18h44" stroke="#f5e500" stroke-width="4"/></svg>
+        <div id="dropTitle" class="drop-title">拖入图片或点击添加</div><div id="dropHint" class="drop-hint">支持 JPG / PNG / SVG · 可一次添加多张 · <kbd>Ctrl</kbd>+<kbd>V</kbd> 粘贴<br>图片只在本机浏览器处理，不会上传</div>
+        <input id="fileInput" type="file" accept=".jpg,.jpeg,.png,.svg,image/jpeg,image/png,image/svg+xml" multiple>
+      </div>
+      <section id="batchPanel" class="batch-panel" hidden><div class="batch-summary"><strong>处理进度</strong><span id="batchStats"></span></div><div class="global-progress"><div id="batchProgressBar"></div></div><div id="batchCurrent"></div></section>
+      <section id="failuresPanel" class="failures" hidden><div class="failures-head"><strong>未达标 / 失败文件（<span id="failureCount">0</span>）</strong><button id="retryFailed" type="button">按当前设置重试全部</button></div><div id="failuresList"></div></section>
+      <div id="list"></div>
+    </section>
+  </div>
+  <div class="bottom-actions"><span id="outputSummary" class="output-summary">有效结果 0 · 输出 0 B</span><button id="stopTask" class="danger" type="button" disabled>停止当前任务</button><button id="rerunTasks" type="button" disabled>重跑任务</button><button id="clearResults" type="button">清空列表</button><button id="downloadAll" disabled>逐个下载全部</button><button id="downloadZip" class="primary" disabled>打包下载 ZIP <span class="arrow">→</span></button></div>
+  <footer>LOCAL ONLY · JPG / PNG / SVG · 原始文件不会被修改</footer>
+</div>
+<script type="module" src="./src/app.js"></script>
+</body>
+</html>

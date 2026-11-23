@@ -1,0 +1,9 @@
+node_modules/
+__pycache__/
+*.py[cod]
+*.log
+.DS_Store
+Thumbs.db
+test/_edge*/
+test/_downloads/
+dist/*.zip

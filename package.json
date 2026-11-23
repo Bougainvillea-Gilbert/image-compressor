@@ -1,0 +1,30 @@
+{
+  "name": "image-compressor-terminal",
+  "version": "1.0.0",
+  "description": "Offline batch image compressor with strict target file size, Web Worker concurrency and a white/yellow industrial UI.",
+  "main": "build.mjs",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "keywords": [
+    "image-compression",
+    "mozjpeg",
+    "oxipng",
+    "webp",
+    "web-worker",
+    "offline"
+  ],
+  "author": "",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "dependencies": {
+    "@jsquash/jpeg": "^1.6.0",
+    "@jsquash/oxipng": "^2.3.0",
+    "@jsquash/png": "^3.1.1",
+    "fflate": "^0.8.3",
+    "svgo": "^4.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
